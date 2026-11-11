@@ -1,0 +1,16 @@
+# dependencies and build output
+node_modules/
+helper/capture
+app/build/
+
+# local tooling and OS files
+.claude/
+.DS_Store
+*.log
+
+# user settings live in ~/Library/Application Support/SyncLight 2/, but never commit a stray copy
+names.json
+layouts.json
+state.json
+ignored.json
+helper/stderr.txt

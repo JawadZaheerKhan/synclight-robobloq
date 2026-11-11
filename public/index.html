@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SyncLight 2.0</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--fg:#1c1c1e;--mut:#6e6e73;--line:#e0e0e6;--acc:#0a84ff;--chip:#ececf1;--shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0e10;--card:#1b1b1e;--fg:#f5f5f7;--mut:#9a9aa1;--line:#2c2c30;--acc:#0a84ff;--chip:#2a2a2e;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:640px;margin:0 auto;padding:22px 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:21px;margin:0;letter-spacing:-.3px}h1 small{color:var(--mut);font-weight:500;font-size:13px;margin-left:6px}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:26px 4px 10px;font-weight:600}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card.off .body{opacity:.45}
+.top{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}.name{font-weight:600;font-size:16px}.meta{color:var(--mut);font-size:12.5px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#30d158;vertical-align:1px}.dot.bad{background:#ff453a}
+button{font:inherit;color:var(--fg);background:var(--chip);border:0;border-radius:999px;padding:7px 15px;cursor:pointer;transition:.12s}
+button:hover{filter:brightness(1.08)}button:active{transform:scale(.97)}
+button.on{background:var(--acc);color:#fff}button.stop{background:#ff453a;color:#fff}
+.swatch{width:40px;height:40px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1.5px var(--line),0 2px 8px rgba(0,0,0,.2);cursor:pointer;flex:none;transition:transform .12s}
+.swatch:hover{transform:scale(1.07)}
+.row{display:flex;align-items:center;gap:12px;margin-top:14px}.row>label{width:78px;color:var(--mut);font-size:13px;flex:none}
+input[type=text]{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--chip);color:var(--fg);border:1.5px solid transparent;border-radius:9px;padding:7px 10px;width:96px;text-transform:uppercase}
+input[type=text]:focus{outline:0;border-color:var(--acc)}input[type=text].bad{border-color:#ff453a}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:3px;background:var(--chip);outline:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.35);cursor:pointer}
+.dots{display:flex;gap:7px;flex-wrap:wrap}.dots i{width:22px;height:22px;border-radius:50%;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(128,128,128,.35);transition:transform .1s}.dots i:hover{transform:scale(1.18)}
+.val{width:40px;text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:4px}
+@media (max-width:480px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{border-radius:13px;padding:0;background:var(--chip);text-align:left;overflow:hidden;border:2px solid transparent;display:flex;flex-direction:column}
+.tile .pv{height:34px;width:100%}.tile .tx{padding:8px 10px 9px}.tile b{display:block;font-size:13.5px}.tile span{color:var(--mut);font-size:11.5px;line-height:1.25;display:block}
+.tile.sel{border-color:var(--acc)}
+.pv.blink{background:linear-gradient(90deg,#fff 0 25%,#222 25% 50%,#fff 50% 75%,#222 75%)}
+.pv.breathe{background:radial-gradient(circle at 50% 50%,#fff,#2a2a2e 75%)}
+.pv.sweep{background:linear-gradient(90deg,#222,#ff2d55 55%,#222)}
+.pv.scanner{background:linear-gradient(90deg,#222 10%,#0a84ff 35%,#222 60%,#0a84ff 90%)}
+.pv.comet{background:linear-gradient(90deg,#222,#ff9f0a 80%,#fff)}
+.pv.alternate{background:linear-gradient(90deg,#ff453a 50%,#0a84ff 50%)}
+.pv.sparkle{background:radial-gradient(circle at 20% 40%,#fff 0 2px,transparent 3px),radial-gradient(circle at 60% 70%,#fff 0 2px,transparent 3px),radial-gradient(circle at 85% 30%,#fff 0 2px,transparent 3px),#25252a}
+.pv.rainbow{background:linear-gradient(90deg,#ff453a,#ff9f0a,#ffd60a,#30d158,#64d2ff,#0a84ff,#bf5af2)}
+.pv.cycle{background:linear-gradient(90deg,#ff453a,#30d158,#0a84ff,#ff453a)}
+/* colour picker popover */
+#pop{position:fixed;z-index:50;width:244px;background:var(--card);border-radius:18px;padding:16px;box-shadow:0 0 0 1px var(--line),0 18px 50px rgba(0,0,0,.35)}
+#pop[hidden]{display:none}#wheelBox{position:relative;width:212px;height:212px;margin:0 auto;touch-action:none}
+#wheel{width:212px;height:212px;border-radius:50%;cursor:crosshair;display:block}
+#knob{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.4);pointer-events:none}
+#pop .r{display:flex;align-items:center;gap:10px;margin-top:14px}#pop .r label{color:var(--mut);font-size:12.5px;width:44px}
+#pv{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(128,128,128,.4);flex:none}
+#back{position:fixed;inset:0;z-index:40}#back[hidden]{display:none}
+.err{color:#ff453a}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border-radius:12px;padding:7px 13px;background:var(--chip);border:2px solid transparent;text-align:left}
+.chip b{font-size:13px}.chip span{font-size:11px;color:var(--mut)}.chip.sel{border-color:var(--acc)}
+.badge{display:inline-block;background:var(--acc);color:#fff;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:8px;vertical-align:2px}
+.card.new{box-shadow:0 0 0 2px var(--acc),var(--shadow)}
+.add{width:100%;border-radius:16px;padding:13px;background:transparent;border:2px dashed var(--line);color:var(--mut)}
+button.ghost{background:transparent;border:1.5px solid var(--line);color:var(--fg)}button.ghost:hover{background:var(--chip)}
+/* setup wizard */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 14px}
+.modal[hidden]{display:none}
+.sheet{background:var(--card);border-radius:20px;padding:22px;width:100%;max-width:520px;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.sheet h3{margin:0 0 2px;font-size:19px}.sheet .row>label{width:92px}
+input.txt,select{font:14px -apple-system,system-ui,sans-serif;background:var(--chip);color:var(--fg);border:1.5px solid transparent;border-radius:9px;padding:8px 10px;width:100%;text-transform:none}
+input.txt:focus,select:focus{outline:0;border-color:var(--acc)}
+input[type=number]{font:14px ui-monospace,Menlo,monospace;background:var(--chip);color:var(--fg);border:1.5px solid transparent;border-radius:9px;padding:8px 6px;width:100%;text-align:center}
+input[type=number]:focus{outline:0;border-color:var(--acc)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1}
+.choice{border-radius:14px;padding:10px 10px 11px;background:var(--chip);border:2px solid transparent;text-align:left;display:block}
+.choice.sel{border-color:var(--acc)}.choice svg{width:100%;height:auto;display:block;margin-bottom:6px;color:var(--mut)}
+.choice b{font-size:13px;display:block}.choice span{font-size:11.5px;color:var(--mut);line-height:1.3;display:block}
+.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1}.counts div{font-size:11.5px;color:var(--mut);text-align:center}.counts div input{margin-top:4px}
+.actions{display:flex;gap:9px;margin-top:20px;align-items:center}.actions .sp{flex:1}
+.warn{color:#ff9f0a}button.danger{color:#ff453a;background:transparent}
+.foot{display:flex;justify-content:flex-end;margin-top:12px}.foot button{padding:6px 14px;font-size:13px}
+button.ghost.danger{color:#ff453a;border-color:rgba(255,69,58,.45)}button.ghost.danger:hover{background:rgba(255,69,58,.12)}
+.sech{display:flex;align-items:flex-end;justify-content:space-between;margin:26px 4px 10px}.sech h2{margin:0}
+.addbtn{background:var(--acc);color:#fff;padding:6px 15px;font-weight:600}
+details.ign{margin:2px 4px 0;color:var(--mut);font-size:12.5px}details.ign summary{cursor:pointer;padding:6px 0}
+details.ign .irow{display:flex;align-items:center;gap:10px;padding:4px 0}details.ign .irow span{flex:1}
+.hint{color:var(--mut);font-size:12.5px;margin:-4px 4px 12px}
+</style></head><body><main>
+<header><h1>SyncLight 2.0<small id="mode"></small></h1><button id="syncBtn">Screen sync</button></header>
+<div class="meta" id="syncMsg" style="margin:-8px 4px 6px"></div>
+
+<div class="sech"><h2>Lights</h2><button class="addbtn" id="addLight">+ Add light</button></div><div class="hint">New lights are detected automatically when you plug them in.</div><div id="lights"></div><div id="ignored"></div>
+
+<h2>Flows</h2>
+<div class="card" id="flows">
+  <div class="chips" id="targets"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="row"><label>Colour A</label><div class="swatch" id="fa"></div><input type="text" id="fah" maxlength="7"><label style="width:auto;margin-left:6px">Colour B</label><div class="swatch" id="fb"></div><input type="text" id="fbh" maxlength="7"></div>
+  <div class="row"><label>Speed</label><input type="range" id="fs" min="1" max="100" value="50"><span class="val" id="fsv">50</span></div>
+  <div class="row"><span class="meta grow" id="fnote">Choose which light(s) a flow applies to. Rainbow and Colour cycle ignore the colours.</span><button id="fstop" class="stop" hidden>Stop flow</button></div>
+</div>
+</main>
+
+<div id="wiz" class="modal" hidden><div class="sheet">
+  <h3 id="wizTitle">Set up light</h3>
+  <div class="meta" id="wizInfo"></div>
+  <div class="row"><label>Name</label><input class="txt" id="wname" placeholder='e.g. 27" monitor' maxlength="40"></div>
+  <div class="row"><label>Monitor</label><select id="wdisp"></select></div>
+  <div class="row" style="align-items:flex-start"><label>Strip starts</label><div class="choices">
+    <button class="choice" data-side="right"><svg viewBox="0 0 120 80"><rect x="8" y="6" width="104" height="62" rx="6" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="2"/><path d="M104 64V14H16v50" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linejoin="round"/><path d="M104 40v-8m-5 6 5-7 5 7" fill="none" stroke="var(--acc)" stroke-width="3"/><circle cx="104" cy="64" r="6" fill="#30d158"/></svg><b>On the right</b><span>Up the right, across the top to the left, down the left</span></button>
+    <button class="choice" data-side="left"><svg viewBox="0 0 120 80"><rect x="8" y="6" width="104" height="62" rx="6" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="2"/><path d="M16 64V14h88v50" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linejoin="round"/><path d="M16 40v-8m-5 6 5-7 5 7" fill="none" stroke="var(--acc)" stroke-width="3"/><circle cx="16" cy="64" r="6" fill="#30d158"/></svg><b>On the left</b><span>Up the left, across the top to the right, down the right</span></button>
+  </div></div>
+  <div class="row" style="align-items:flex-start"><label>LEDs on each side</label><div class="counts" id="wcounts"></div></div>
+  <div class="meta" id="wsum" style="margin:10px 0 0 104px"></div>
+  <div class="meta" style="margin:8px 0 0 104px">Viewed from the front. The strip lights up as you edit: <b>white</b> = first LED, then <span style="color:#ff453a">red</span>, <span style="color:#30d158">green</span>, <span style="color:#0a84ff">blue</span> for each side in order. Adjust until the colours sit on the right edges.</div>
+  <div class="warn" id="werr" style="margin:10px 0 0 104px"></div>
+  <div class="actions"><button id="wid">Flash this light</button><button class="danger" id="wdel" hidden>Remove</button><span class="sp"></span><button id="wcancel">Cancel</button><button class="on" id="wsave">Save</button></div>
+</div></div>
+<div id="dlg" class="modal" style="z-index:80" hidden><div class="sheet" style="max-width:400px"><h3 id="dlgT"></h3><div class="meta" id="dlgM" style="margin-top:8px;font-size:13.5px"></div><div class="actions" id="dlgB"></div></div></div>
+<div id="back" hidden></div>
+<div id="pop" hidden>
+  <div id="wheelBox"><canvas id="wheel"></canvas><div id="knob"></div></div>
+  <div class="r"><label>Shade</label><input type="range" id="val" min="0" max="100" value="100"></div>
+  <div class="r"><div id="pv"></div><input type="text" id="phex" maxlength="7" style="flex:1;width:auto"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const hex=c=>'#'+c.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const okHex=h=>/^#?[0-9a-f]{6}$/i.test(h.trim());
+const norm=h=>'#'+h.trim().replace('#','').toLowerCase();
+const debounce=(f,ms=60)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>f(...a),ms)}};
+const api=(u,b)=>fetch(u,b?{method:'POST',body:JSON.stringify(b)}:{}).then(r=>r.json());
+function hsv2rgb(h,s,v){const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);
+  const [r,g,b]=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6];return[r*255,g*255,b*255]}
+function rgb2hsv([r,g,b]){r/=255;g/=255;b/=255;const m=Math.max(r,g,b),d=m-Math.min(r,g,b);let h=0;
+  if(d){h=m===r?((g-b)/d)%6:m===g?(b-r)/d+2:(r-g)/d+4;h/=6;if(h<0)h+=1}return[h,m?d/m:0,m]}
+const PRESETS=['#ffffff','#ffb46b','#ff3b30','#ff9500','#ffd60a','#30d158','#64d2ff','#0a84ff','#bf5af2','#ff2d92'];
+
+/* ---------- colour wheel popover ---------- */
+const pop=$('#pop'),wheel=$('#wheel'),knob=$('#knob'),valEl=$('#val'),phex=$('#phex'),pv=$('#pv'),back=$('#back');
+const R=106;let H=0,S=0,V=1,cb=null,wheelDrawn=false;
+function drawWheel(){
+  const d=window.devicePixelRatio||1,n=212*d;wheel.width=wheel.height=n;
+  const ctx=wheel.getContext('2d'),img=ctx.createImageData(n,n),c=n/2;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    const dx=x+.5-c,dy=y+.5-c,r=Math.hypot(dx,dy)/c,i=(y*n+x)*4;
+    if(r>1){img.data[i+3]=0;continue}
+    const [R_,G,B]=hsv2rgb((Math.atan2(dy,dx)/(2*Math.PI)+1)%1,Math.min(1,r),1);
+    img.data[i]=R_;img.data[i+1]=G;img.data[i+2]=B;img.data[i+3]=r>.992?Math.max(0,255*(1-r)/.008):255;
+  }
+  ctx.putImageData(img,0,0);wheelDrawn=true;
+}
+function paintPicker(emit){
+  const c=hsv2rgb(H,S,V),h=hex(c);
+  const a=H*2*Math.PI;knob.style.left=R+Math.cos(a)*S*R+'px';knob.style.top=R+Math.sin(a)*S*R+'px';
+  knob.style.background=hex(hsv2rgb(H,S,1));pv.style.background=h;phex.value=h.slice(1);phex.classList.remove('bad');
+  valEl.style.background=`linear-gradient(90deg,#000,${hex(hsv2rgb(H,S,1))})`;valEl.value=Math.round(V*100);
+  if(emit&&cb)cb(h);
+}
+function wheelPoint(e){const b=wheel.getBoundingClientRect(),x=e.clientX-b.left-R,y=e.clientY-b.top-R;
+  H=(Math.atan2(y,x)/(2*Math.PI)+1)%1;S=Math.min(1,Math.hypot(x,y)/R);if(V<.05)V=1;paintPicker(true)}
+wheel.addEventListener('pointerdown',e=>{wheel.setPointerCapture(e.pointerId);wheelPoint(e);wheel.onpointermove=wheelPoint});
+wheel.addEventListener('pointerup',()=>wheel.onpointermove=null);
+valEl.oninput=()=>{V=valEl.value/100;paintPicker(true)};
+phex.oninput=()=>{if(okHex(phex.value)){[H,S,V]=rgb2hsv(rgb(norm(phex.value)));paintPicker(true)}else phex.classList.add('bad')};
+function openPicker(anchor,color,onChange){
+  if(!wheelDrawn)drawWheel();
+  [H,S,V]=rgb2hsv(rgb(color));cb=null;paintPicker(false);cb=onChange;
+  pop.hidden=back.hidden=false;
+  const b=anchor.getBoundingClientRect(),w=244,h=pop.offsetHeight;
+  pop.style.left=Math.max(8,Math.min(innerWidth-w-8,b.left+b.width/2-w/2))+'px';
+  pop.style.top=Math.max(8,Math.min(innerHeight-h-8,b.bottom+10>innerHeight-h-8?b.top-h-10:b.bottom+10))+'px';
+}
+back.onclick=()=>{pop.hidden=back.hidden=true;cb=null;load()};
+
+/* ---------- lights ---------- */
+function card(l){
+  const s=l.state,col=hex(s.color),el=document.createElement('div');el.className='card'+(s.on?'':' off');
+  if(!l.configured){ // newly plugged-in light: only offer setup
+    el.className='card new';
+    el.innerHTML=`<div class="top"><div class="swatch" style="background:#7c7c84;cursor:default"></div>
+      <div class="grow"><div class="name">${l.name}<span class="badge">NEW</span></div><div class="meta"><span class="dot ${l.connected?'':'bad'}"></span>${l.connected?`${l.lamps} LEDs reported · fw ${l.firmware}`:'disconnected'} · not set up yet</div></div>
+      <button class="ghost" data-ignore title="Hide this light and release it">Ignore</button>
+      <button class="on" data-setup ${l.connected?'':'disabled'}>Set up</button></div>`;
+    el.querySelector('[data-setup]').onclick=()=>openWizard(l);
+    el.querySelector('[data-ignore]').onclick=async()=>{
+      const c=await ask(`Ignore ${l.name}?`,'It will be hidden and released, so other software can use it. You can bring it back from "Ignored lights" under the list.',[['Ignore','stop','ok']]);
+      if(c){await api(`/api/lights/${l.uuid}/ignore`,{ignore:true,label:l.name});load()}
+    };
+    return el;
+  }
+  el.innerHTML=`<div class="top"><div class="swatch" style="background:${col}" title="Pick colour"></div>
+    <div class="grow"><div class="name">${l.name}</div><div class="meta"><span class="dot ${l.connected?'':'bad'}"></span>${l.connected?`${l.leds} LEDs · fw ${l.firmware}`:'disconnected'}</div></div>
+    <button class="ghost" data-edit title="Change name, monitor, strip direction and LED counts">Edit layout</button>
+    <button class="${s.on?'on':''}" data-p>${s.on?'On':'Off'}</button></div>
+    <div class="body"><div class="row"><label>Colour</label><input type="text" value="${col.slice(1)}" maxlength="7"><div class="dots">${PRESETS.map(c=>`<i style="background:${c}" data-c="${c}"></i>`).join('')}</div></div>
+    <div class="row"><label>Brightness</label><input type="range" min="5" max="100" value="${s.brightness}"><span class="val">${s.brightness}%</span></div></div>
+    <div class="foot"><button class="ghost danger" data-del>Remove light</button></div>`;
+  const sw=el.querySelector('.swatch'),tx=el.querySelector('input[type=text]'),br=el.querySelector('input[type=range]');
+  const setCol=h=>{sw.style.background=h;tx.value=h.slice(1);tx.classList.remove('bad');api('/api/lights/'+l.uuid,{color:rgb(h)})};
+  const live=debounce(setCol,50);
+  sw.onclick=()=>openPicker(sw,hex(l.state.color),h=>{l.state.color=rgb(h);live(h)});
+  tx.oninput=()=>{if(okHex(tx.value)){l.state.color=rgb(norm(tx.value));sw.style.background=norm(tx.value);live(norm(tx.value))}else tx.classList.add('bad')};
+  el.querySelectorAll('[data-c]').forEach(e=>e.onclick=()=>{l.state.color=rgb(e.dataset.c);setCol(e.dataset.c)});
+  const sendBr=debounce(v=>api('/api/lights/'+l.uuid,{brightness:+v}));
+  br.oninput=()=>{br.nextElementSibling.textContent=br.value+'%';sendBr(br.value);busy=Date.now()};
+  el.querySelector('[data-edit]').onclick=()=>openWizard(l);
+  el.querySelector('[data-del]').onclick=()=>removeLight(l);
+  el.querySelector('[data-p]').onclick=()=>api('/api/lights/'+l.uuid,{on:!s.on}).then(load);
+  return el;
+}
+let busy=0;
+async function load(){
+  if(!pop.hidden||!$('#wiz').hidden||Date.now()-busy<1500||document.activeElement?.type==='text')return;
+  const [ls,sy,fx]=await Promise.all([api('/api/lights'),api('/api/sync'),api('/api/effects')]);
+  LIGHTS=ls;$('#lights').replaceChildren(...ls.map(card));
+  syncState=sy;paintFlows(fx);paintSync(sy);paintIgnored();
+}
+
+/* ---------- sync ---------- */
+let syncState={enabled:false};
+function paintSync(s){
+  const b=$('#syncBtn');b.className=s.enabled?'on':'';b.textContent=s.enabled?'Screen sync: On':'Screen sync';
+  $('#syncMsg').innerHTML=s.error?`<span class="err">${s.error}</span>`:'';
+  const names=[...new Set(Object.values(fxState.assigned||{}).map(a=>fxName(a.id)))];
+  $('#mode').textContent=s.enabled?'· syncing to screens':(names.length?'· flow: '+names.join(' + '):'');
+}
+$('#syncBtn').onclick=async()=>{const s=await api('/api/sync');await api('/api/sync',{enabled:!s.enabled});load()};
+
+/* ---------- flows ---------- */
+let fxState={list:[],assigned:{}},LIGHTS=[],target='all',chosen=null,colors=['#0a84ff','#000000'];
+const CONF=()=>LIGHTS.filter(l=>l.configured);
+const targetIds=()=>target==='all'?CONF().map(l=>l.uuid):[target];
+const fxName=id=>(fxState.list.find(e=>e.id===id)||{}).name||'';
+function runningFor(ids){ // effect id shared by all targets, 'mixed', or null
+  const e=ids.map(u=>fxState.assigned[u]);
+  if(!e.some(Boolean))return null;
+  return e.every(x=>x&&x.id===e[0].id)?e[0].id:'mixed';
+}
+function pullSettings(){ // show the running flow's colours/speed for the selected target
+  const a=targetIds().map(u=>fxState.assigned[u]).find(Boolean);
+  if(a){colors=[...a.colors];$('#fs').value=a.speed;$('#fsv').textContent=a.speed}
+}
+function paintFlows(fx){
+  fxState=fx;
+  const ids=targetIds(),run=runningFor(ids);
+  if(!$('#tiles').children.length)
+    $('#tiles').replaceChildren(...fx.list.map(e=>{const t=document.createElement('button');t.className='tile';t.dataset.id=e.id;
+      t.innerHTML=`<div class="pv ${e.id}"></div><div class="tx"><b>${e.name}</b><span>${e.desc}</span></div>`;
+      t.onclick=()=>{chosen=e.id;startFlow()};return t}));
+  document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('sel',t.dataset.id===run));
+  const opts=[{k:'all',n:CONF().length===2?'Both monitors':'All lights',u:CONF().map(l=>l.uuid)},...CONF().map(l=>({k:l.uuid,n:l.name,u:[l.uuid]}))];
+  $('#targets').replaceChildren(...opts.map(o=>{const r=runningFor(o.u),c=document.createElement('button');
+    c.className='chip'+(o.k===target?' sel':'');
+    c.innerHTML=`<b>${o.n}</b><span>${r==='mixed'?'different flows':r?fxName(r):'no flow'}</span>`;
+    c.onclick=()=>{target=o.k;chosen=null;pullSettings();paintFlows(fxState);paintSync(syncState)};return c}));
+  $('#fstop').hidden=!run;
+  if(!chosen&&run&&run!=='mixed'&&!touched())pullSettings();
+  paintFlowColors();
+}
+const touched=()=>Date.now()-busy<2500;
+function paintFlowColors(){$('#fa').style.background=colors[0];$('#fb').style.background=colors[1];
+  if(document.activeElement.id!=='fah')$('#fah').value=colors[0].slice(1);
+  if(document.activeElement.id!=='fbh')$('#fbh').value=colors[1].slice(1)}
+const startFlow=()=>{if(!chosen)return;busy=Date.now();
+  api('/api/effects',{id:chosen,targets:target==='all'?null:[target],speed:+$('#fs').value,colors}).then(fx=>paintFlows(fx))};
+const liveFlow=debounce(()=>{const r=runningFor(targetIds());if(r&&r!=='mixed'){chosen=r;startFlow()}else if(chosen)startFlow()},80);
+[['fa',0],['fb',1]].forEach(([id,i])=>{
+  $('#'+id).onclick=()=>openPicker($('#'+id),colors[i],h=>{colors[i]=h;paintFlowColors();liveFlow()});
+  $('#'+id+'h').oninput=e=>{const t=e.target;if(okHex(t.value)){t.classList.remove('bad');colors[i]=norm(t.value);paintFlowColors();liveFlow()}else t.classList.add('bad')};
+});
+$('#fs').oninput=()=>{$('#fsv').textContent=$('#fs').value;busy=Date.now();liveFlow()};
+$('#fstop').onclick=()=>{chosen=null;api('/api/effects',{id:null,targets:target==='all'?null:[target]}).then(fx=>{paintFlows(fx);load()})};
+
+/* ---------- in-page dialogs (alert/confirm don't work in the native app's web view) ---------- */
+function ask(title,msg,buttons){ // buttons: [[label,class,value],...] -> resolves with the value, or null if cancelled
+  return new Promise(res=>{
+    const d=$('#dlg');$('#dlgT').textContent=title;$('#dlgM').textContent=msg;
+    const done=v=>{d.hidden=true;res(v)};
+    const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.onclick=()=>done(null);
+    $('#dlgB').replaceChildren(Object.assign(document.createElement('span'),{className:'sp'}),cancel,
+      ...buttons.map(([label,cls,val])=>{const b=document.createElement('button');b.textContent=label;b.className=cls||'';b.onclick=()=>done(val);return b}));
+    d.onclick=e=>{if(e.target===d)done(null)};d.hidden=false;
+  });
+}
+async function removeLight(l){
+  const opts=[['Remove','stop','remove']];
+  if(l.connected)opts.push(['Remove & ignore','stop','ignore']);
+  const c=await ask(`Remove ${l.name}?`,
+    'Its name and strip layout are deleted from SyncLight 2.0.'+(l.connected?' It is still plugged in, so it will reappear as a new light unless you also ignore it.':''),opts);
+  if(!c)return;
+  await fetch('/api/lights/'+l.uuid,{method:'DELETE'});
+  if(c==='ignore')await api(`/api/lights/${l.uuid}/ignore`,{ignore:true,label:l.name});
+  load();
+}
+let igOpen=false;
+async function paintIgnored(){
+  const list=await api('/api/ignored'),box=$('#ignored');
+  if(!list.length){box.replaceChildren();return}
+  const d=document.createElement('details');d.className='ign';d.open=igOpen;d.ontoggle=()=>igOpen=d.open;
+  d.innerHTML=`<summary>Ignored lights (${list.length})</summary>`+list.map(x=>`<div class="irow"><span>${x.label} · ${x.uuid.slice(-4)}</span><button class="ghost" data-u="${x.uuid}">Restore</button></div>`).join('');
+  d.querySelectorAll('[data-u]').forEach(b=>b.onclick=async()=>{await api(`/api/lights/${b.dataset.u}/ignore`,{ignore:false});setTimeout(load,2500)});
+  box.replaceChildren(d);
+}
+
+/* ---------- setup wizard ---------- */
+const wiz=$('#wiz');let W=null;
+const SIDES={right:['Right side','Top','Left side'],left:['Left side','Top','Right side']};
+const sendPreview=debounce(()=>{if(W)api(`/api/lights/${W.uuid}/preview`,{startSide:W.startSide,counts:W.counts}).catch(()=>{})},350);
+function paintWizard(){
+  document.querySelectorAll('.choice').forEach(c=>c.classList.toggle('sel',c.dataset.side===W.startSide));
+  $('#wcounts').replaceChildren(...SIDES[W.startSide].map((n,i)=>{const d=document.createElement('div');
+    d.innerHTML=`${n}<input type="number" min="1" max="254" value="${W.counts[i]}">`;
+    d.querySelector('input').oninput=e=>{W.counts[i]=Math.max(0,Math.min(254,+e.target.value||0));paintSum();sendPreview()};return d}));
+  paintSum();
+}
+function paintSum(){
+  const n=W.counts.reduce((a,b)=>a+b,0),bad=W.counts.some(c=>c<1);
+  $('#wsum').innerHTML=bad?'<span class="warn">Each side needs at least 1 LED.</span>':
+    `Total <b>${n}</b> LEDs · this light reports ${W.lamps}`+(n>W.lamps?'<br><span class="warn">That is more than the light reports; the extra LEDs may not light.</span>':n<W.lamps?' (the rest are left dark)':'');
+  $('#wsave').disabled=bad||n>254;
+}
+function fillDisplays(disp,current){
+  const names=disp.map(d=>d.name);if(current&&!names.includes(current))names.push(current);
+  const keep=$('#wdisp').value||current||'';
+  $('#wdisp').replaceChildren(new Option('None / not attached to a monitor',''),...names.map(n=>{const d=disp.find(x=>x.name===n);return new Option(d?`${n}  (${d.resolution})`:n,n)}));
+  $('#wdisp').value=keep;
+}
+function openWizard(l){
+  const seg=l.segments;
+  W={uuid:l.uuid,lamps:l.lamps||0,existing:l.configured,
+     startSide:seg&&seg[0]&&seg[0].edge==='left'?'left':'right',
+     counts:seg&&seg.length===3?seg.map(s=>s.count):[15,27,15]};
+  $('#wizTitle').textContent=l.configured?'Edit '+l.name:'Set up new light';
+  $('#wizInfo').textContent=`ID ${l.uuid} · fw ${l.firmware||'?'} · reports ${l.lamps} LEDs`;
+  $('#wname').value=l.configured?l.name:'';
+  fillDisplays([],l.display);$('#wdisp').value=l.display||'';
+  $('#wdel').hidden=!l.configured;
+  $('#werr').textContent='';wiz.hidden=false;paintWizard();sendPreview();
+  api('/api/displays').then(d=>{if(W&&W.uuid===l.uuid)fillDisplays(d,l.display)}).catch(()=>{});  // list arrives a moment later
+}
+function closeWizard(){const u=W&&W.uuid;wiz.hidden=true;W=null;if(u)api(`/api/lights/${u}/preview`,{clear:true}).finally(load)}
+document.querySelectorAll('.choice').forEach(c=>c.onclick=()=>{W.startSide=c.dataset.side;paintWizard();sendPreview()});
+$('#wcancel').onclick=closeWizard;
+wiz.onclick=e=>{if(e.target===wiz)closeWizard()};
+$('#wid').onclick=()=>api(`/api/lights/${W.uuid}/identify`,{}).then(()=>sendPreview());
+$('#wsave').onclick=async()=>{
+  const b=$('#wsave');b.disabled=true;b.textContent='Saving…';
+  const r=await api(`/api/lights/${W.uuid}/setup`,{name:$('#wname').value,display:$('#wdisp').value,startSide:W.startSide,counts:W.counts});
+  b.textContent='Save';
+  if(r.error){$('#werr').textContent=r.error;b.disabled=false;return}
+  $('#werr').textContent='';
+  wiz.hidden=true;W=null;load();
+};
+$('#wdel').onclick=async()=>{
+  const l=LIGHTS.find(x=>x.uuid===W.uuid),u=W.uuid;wiz.hidden=true;W=null;
+  await api(`/api/lights/${u}/preview`,{clear:true}).catch(()=>{});
+  if(l)removeLight(l);
+};
+
+/* ---------- add a light ---------- */
+let addCancel=false;
+async function addLight(){
+  const d=$('#dlg'),msg=$('#dlgM');addCancel=false;
+  $('#dlgT').textContent='Add a light';
+  const stop=()=>{addCancel=true;d.hidden=true};
+  const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.onclick=stop;
+  $('#dlgB').replaceChildren(Object.assign(document.createElement('span'),{className:'sp'}),cancel);
+  d.onclick=e=>{if(e.target===d)stop()};d.hidden=false;
+  msg.textContent='Plug the light into a USB port. Looking for new lights…';
+  const t0=Date.now();
+  while(!addCancel&&Date.now()-t0<90000){
+    const found=(await api('/api/scan',{})).find(l=>l.connected&&!l.configured);
+    if(addCancel)return;
+    if(found){d.hidden=true;await load();openWizard(found);return}
+    const ign=await api('/api/ignored');
+    msg.textContent='Plug the light into a USB port. Looking for new lights… none found yet.'+(ign.length?' Ignored lights stay hidden; restore one from "Ignored lights" under the list.':'');
+    await new Promise(r=>setTimeout(r,1500));
+  }
+  if(!addCancel)msg.textContent='No new light found. Check the USB cable and try again.';
+}
+$('#addLight').onclick=addLight;
+
+/* reload by itself when the interface is updated */
+let uiVer=null;
+setInterval(async()=>{try{const v=(await api('/api/version')).v;if(uiVer===null)uiVer=v;else if(v!==uiVer&&$('#wiz').hidden&&$('#dlg').hidden)location.reload()}catch{}},4000);
+
+api('/api/displays').catch(()=>{});   // warm the monitor list so the wizard has it ready
+load();setInterval(load,3000);
+</script></body></html>
