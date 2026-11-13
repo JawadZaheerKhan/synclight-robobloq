@@ -44,9 +44,12 @@ class Light {
     return HID.devices().filter((d) => d.vendorId === VID && d.productId === PID && d.interface === 0);
   }
 
-  static async open(path) {
-    const l = new Light(await HID.HIDAsync.open(path), path);
-    await l.readInfo();
+  // `hid` is injectable so tests can fake the device.
+  static async open(path, hid = HID) {
+    const dev = await hid.HIDAsync.open(path);
+    const l = new Light(dev, path);
+    try { await l.readInfo(); }
+    catch (e) { await dev.close().catch(() => {}); throw e; }   // never leak the handle: a leaked one blocks every later open
     return l;
   }
 
@@ -70,7 +73,9 @@ class Light {
   }
 
   async readInfo() {
-    const r = await this.request(rb(A.READ_INFO));
+    // Right after plug-in, wake or a USB reset the light can take a moment to answer, so try a few times.
+    let r = null;
+    for (let i = 0; i < 4 && !r; i++) { r = await this.request(rb(A.READ_INFO), 700); if (!r) await sleep(250); }
     if (!r) throw new Error('light did not answer the info request');
     this.info = {
       lamps: r[11],

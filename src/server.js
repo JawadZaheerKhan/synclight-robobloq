@@ -9,9 +9,11 @@ const { PUBLIC, DATA } = require('./paths');
 const { parseShape } = require('./layout');
 
 const PORT = +process.env.PORT || 7878;
+const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const mgr = new Manager();
-mgr.on('found', (u) => console.log('connected', u));
-mgr.on('lost', (u) => console.log('lost', u));
+mgr.on('found', (u) => log('connected', u));
+mgr.on('lost', (u) => log('lost', u));
+mgr.on('openfail', (p, why) => log('could not open', p, '-', why.slice(0, 120)));
 mgr.start();
 const sync = new Sync(mgr);
 const effects = new Effects(mgr);

@@ -68,3 +68,26 @@ test('setColor fills the strip and blanks anything beyond it', async () => {
   assert.deepEqual([...f.subarray(5, 10)], [1, 1, 2, 3, 10]);      // LEDs 1..10 in the colour
   assert.deepEqual([...f.subarray(10, 15)], [11, 0, 0, 0, 254]);   // the rest off
 });
+
+test('a light that never answers is closed, not leaked', async () => {
+  let closed = false;
+  const dev = { on() {}, async write() {}, async close() { closed = true; } };       // never replies
+  const fakeHid = { HIDAsync: { open: async () => dev } };
+  await assert.rejects(Light.open('fake', fakeHid), /did not answer/);
+  assert.equal(closed, true, 'the HID handle must be released so the next attempt can open the device');
+});
+
+test('a light that answers late is still picked up', async () => {
+  let onData;
+  const dev = { on(ev, f) { if (ev === 'data') onData = f; }, async close() {},
+    async write(b) {                                                                  // the first two requests are ignored
+      dev.n = (dev.n || 0) + 1;
+      if (dev.n >= 3) {                                                               // the third info request is the first one answered
+        const reply = Buffer.alloc(64); reply.write('RB', 0, 'ascii'); reply[3] = b[4]; reply[4] = 130; reply[11] = 57; reply[21] = 1; reply[22] = 8; reply[23] = 2;
+        setImmediate(() => onData(reply));
+      }
+    } };
+  const l = await Light.open('fake', { HIDAsync: { open: async () => dev } });
+  assert.equal(l.info.lamps, 57);
+  assert.equal(l.info.firmware, '1.8.2');
+});

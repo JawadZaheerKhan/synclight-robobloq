@@ -20,6 +20,7 @@ class Manager extends EventEmitter {
     this.names = readJson(NAMES, {});
     this.layouts = readJson(LAYOUTS, {});
     this.ignored = readJson(IGNORED, {});           // uuid -> label; these lights are released and hidden
+    this.failed = new Map();                        // path -> last open error, so we only report a reason once
     this.skip = new Set();                          // HID paths of ignored lights, so we stop re-opening them
     this.scanning = false;
   }
@@ -39,6 +40,7 @@ class Manager extends EventEmitter {
         if (l.closed || !present.has(l.path)) { l.close().catch(() => {}); this.lights.delete(uuid); this.emit('lost', uuid); }
       }
       for (const p of this.skip) if (!present.has(p)) this.skip.delete(p);
+      for (const p of this.failed.keys()) if (!present.has(p)) this.failed.delete(p);
       const open = new Set([...this.lights.values()].map((l) => l.path));
       for (const p of present) {
         if (open.has(p) || this.skip.has(p)) continue;
@@ -48,7 +50,9 @@ class Manager extends EventEmitter {
           this.lights.set(l.info.uuid, l);
           this.emit('found', l.info.uuid);
           await this.apply(l.info.uuid);           // restore last known state
-        } catch { /* busy or still waking up; retry next scan */ }
+        } catch (e) {                                  // busy or still waking up: retry next scan, but say why (once)
+          if (this.failed.get(p) !== e.message) { this.failed.set(p, e.message); this.emit('openfail', p, e.message); }
+        }
       }
     } finally { this.scanning = false; }
   }
